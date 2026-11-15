@@ -9,6 +9,7 @@ Dibuat dengan **Laravel 12**, **MySQL**, dan **Blade**; antarmuka memakai **Boot
 ## Daftar Isi
 
 - [Fitur](#fitur)
+- [Tangkapan Layar](#tangkapan-layar)
 - [Teknologi](#teknologi)
 - [Kebutuhan Sistem](#kebutuhan-sistem)
 - [Instalasi Lokal](#instalasi-lokal)
@@ -56,6 +57,36 @@ Dibuat dengan **Laravel 12**, **MySQL**, dan **Blade**; antarmuka memakai **Boot
 - Bukti transfer disimpan **privat** (`storage/app/private`), hanya bisa dibuka admin lewat route ber-otentikasi.
 - Rate limit pada endpoint rawan: login (5/menit), checkout (10/menit), upload bukti (5/menit), halaman status (30/menit).
 - Registrasi publik ditutup; akun admin dibuat lewat perintah `admin:create`.
+
+---
+
+## Tangkapan Layar
+
+> Diambil dari aplikasi yang berjalan lokal dengan data demo.
+
+### Katalog produk
+
+![Katalog produk — banner promo, pencarian, filter kategori, dan daftar produk](docs/screenshots/katalog.png)
+
+Halaman utama pelanggan: banner promo, kolom pencarian, filter kategori (Makanan/Minuman/Snack), dan daftar produk dengan indikator stok. Bar keranjang di bawah menampilkan jumlah menu dan total sementara.
+
+### Checkout
+
+![Halaman checkout — data pengiriman dan ringkasan pesanan](docs/screenshots/checkout.png)
+
+Checkout tanpa akun: data penerima, pilihan **Delivery** atau **Ambil di Tempat**, alamat pengiriman, catatan dapur, lalu ringkasan menu dan total biaya di bagian bawah.
+
+### Status pesanan
+
+![Halaman status pesanan — pelacakan lewat kode referensi](docs/screenshots/status-pesanan.png)
+
+Pelacakan mandiri dengan kode referensi `ORD-...`: posisi tahap (mis. “Tahap 2 dari 5”), estimasi tiba, dan log perjalanan pesanan — tanpa login.
+
+### Panel admin — verifikasi pembayaran
+
+![Panel admin pembayaran — daftar bukti transfer dan aksi verifikasi](docs/screenshots/admin-pembayaran.png)
+
+Daftar bukti pembayaran yang masuk, lengkap dengan ringkasan (total, menunggu review, sudah diverifikasi), nominal, status, waktu unggah, serta aksi Detail/Edit/Hapus untuk memverifikasi atau menolak pembayaran.
 
 ---
 
