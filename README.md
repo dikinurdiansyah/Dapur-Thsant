@@ -29,8 +29,8 @@ Dibuat dengan **Laravel 12**, **MySQL**, dan **Blade**; antarmuka memakai **Boot
 ## Fitur
 
 ### Sisi Pelanggan (tanpa login)
-- **Katalog produk** dengan kategori, pencarian, harga, dan indikator stok.
-- **Detail produk** lengkap dengan gambar, deskripsi, dan tombol tambah ke keranjang.
+- **Katalog produk** dengan pencarian nama, filter kategori, pengurutan (terbaru/harga/abjad), paginasi 12 item, dan indikator stok. Produk nonaktif atau stok habis otomatis tidak ditampilkan.
+- **Detail produk** lengkap dengan gambar, deskripsi, kategori, produk terkait, dan tombol tambah ke keranjang.
 - **Keranjang belanja** berbasis sesi: tambah, ubah jumlah, hapus, kosongkan.
 - **Checkout tamu**: isi data pengiriman, pilih **DELIVERY** (ongkir Rp10.000) atau **PICKUP**, pilih metode bayar **TRANSFER_BANK** (BCA/Mandiri/GoPay/OVO/ShopeePay/QRIS) atau **COD**.
 - **Kode promo** dengan tipe potongan persen atau nominal, minimal belanja, dan masa berlaku.
@@ -63,8 +63,8 @@ Dibuat dengan **Laravel 12**, **MySQL**, dan **Blade**; antarmuka memakai **Boot
 
 | Komponen | Versi / Keterangan |
 |---|---|
-| PHP | ^8.2 (diuji pada PHP 8.2+) |
-| Framework | Laravel 12.69 |
+| PHP | ^8.2 — diuji pada PHP 8.2.12 |
+| Framework | Laravel 12.69.2 |
 | Database | MySQL 8 (utf8mb4) |
 | Autentikasi API | Laravel Sanctum 4 (personal access token) |
 | Tampilan | Blade + Bootstrap 5.3 (CDN) + CSS kustom |
