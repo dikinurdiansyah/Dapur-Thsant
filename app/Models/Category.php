@@ -7,8 +7,6 @@ use Illuminate\Support\Str;
 
 class Category extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
         'name',
         'slug',
@@ -25,7 +23,7 @@ class Category extends Model
         });
 
         static::updating(function ($category) {
-            if ($category->isDirty('name')) {
+            if ($category->isDirty('name') && ! $category->isDirty('slug')) {
                 $category->slug = Str::slug($category->name);
             }
         });

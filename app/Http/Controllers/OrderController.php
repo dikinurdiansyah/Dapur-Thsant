@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\StockException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Promo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class OrderController extends Controller
 {
@@ -253,18 +255,26 @@ class OrderController extends Controller
             return back()->with('error', 'Alasan pembatalan harus diisi.');
         }
 
-        if ($order->status === 'SELESAI' && $validated['status'] === 'DIBATALKAN') {
-            return back()->with('error', 'Order yang sudah selesai tidak dapat dibatalkan.');
+        if ($validated['status'] === 'DIBATALKAN') {
+            if ($order->status === 'SELESAI') {
+                return back()->with('error', 'Order yang sudah selesai tidak dapat dibatalkan.');
+            }
+
+            // Idempoten: stok hanya dikembalikan sekali walau pembayarannya ditolak juga.
+            $order->cancelWithReason($validated['rejection_reason']);
+
+            return back()->with('success', 'Status order berhasil diperbarui.');
         }
 
-        // Jika status berubah ke DIBATALKAN, kembalikan stok
-        if ($validated['status'] === 'DIBATALKAN' && $order->status !== 'DIBATALKAN') {
-            foreach ($order->orderItems as $item) {
-                $product = Product::find($item->product_id);
-                if ($product) {
-                    $product->increment('stock', $item->quantity);
-                }
+        if ($order->status === 'DIBATALKAN') {
+            try {
+                // Pesanan aktif kembali, jadi stok harus dipotong lagi.
+                $order->reactivate($validated['status']);
+            } catch (StockException $e) {
+                return back()->with('error', $e->getMessage());
             }
+
+            return back()->with('success', 'Status order berhasil diperbarui.');
         }
 
         $order->update($validated);
@@ -285,12 +295,12 @@ class OrderController extends Controller
 
         // Kembalikan stok hanya jika order belum dibatalkan (menghindari stok dobel).
         if ($order->status !== 'DIBATALKAN') {
-            foreach ($order->orderItems as $item) {
-                $product = Product::find($item->product_id);
-                if ($product) {
-                    $product->increment('stock', $item->quantity);
-                }
-            }
+            $order->restoreStock();
+        }
+
+        // Bukti bayar ikut dihapus agar tidak tertinggal sebagai file yatim.
+        if ($order->payment?->receipt_image_path) {
+            Storage::disk('local')->delete($order->payment->receipt_image_path);
         }
 
         $order->delete();

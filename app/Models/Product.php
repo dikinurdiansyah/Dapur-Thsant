@@ -38,7 +38,8 @@ class Product extends Model
         });
 
         static::updating(function ($product) {
-            if ($product->isDirty('name')) {
+            // Slug yang dikirim eksplisit (dan sudah divalidasi unik) tidak ditimpa.
+            if ($product->isDirty('name') && ! $product->isDirty('slug')) {
                 $product->slug = Str::slug($product->name);
             }
         });

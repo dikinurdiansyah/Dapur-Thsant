@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class PaymentController extends Controller
@@ -80,42 +80,40 @@ class PaymentController extends Controller
             return back()->with('error', 'Order sudah dibatalkan, pembayaran tidak bisa diverifikasi.');
         }
 
+        $oldReceiptPath = $payment->receipt_image_path;
+
         if ($request->hasFile('receipt_image')) {
-            if ($payment->receipt_image_path) {
-                Storage::disk('local')->delete($payment->receipt_image_path);
-            }
             $validated['receipt_image_path'] = $request->file('receipt_image')->store('receipts', 'local');
         }
 
-        // Logic VERIFIED
-        if ($validated['payment_status'] === 'VERIFIED' && $payment->payment_status !== 'VERIFIED') {
-            $validated['verified_at'] = now();
-            if ($payment->order) {
-                $payment->order->update(['status' => 'SELESAI']); // ✅ Diubah jadi SELESAI
-            }
-        }
+        // Perubahan baris pembayaran dan pembatalan order harus atomik: bila salah
+        // satu gagal, keduanya dibatalkan.
+        DB::transaction(function () use ($payment, $validated) {
+            // Logic VERIFIED
+            if ($validated['payment_status'] === 'VERIFIED' && $payment->payment_status !== 'VERIFIED') {
+                $validated['verified_at'] = now();
 
-        // Logic REJECTED
-        if ($validated['payment_status'] === 'REJECTED' && $payment->payment_status !== 'REJECTED') {
-            $validated['verified_at'] = null;
-
-            if ($payment->order) {
-                // Kembalikan stok
-                foreach ($payment->order->orderItems as $item) {
-                    $product = Product::find($item->product_id);
-                    if ($product) {
-                        $product->increment('stock', $item->quantity);
-                    }
+                if ($payment->order) {
+                    $payment->order->update(['status' => 'SELESAI']);
                 }
-
-                $payment->order->update([
-                    'status' => 'DIBATALKAN',
-                    'rejection_reason' => $validated['admin_notes'] ?? 'Pembayaran ditolak',
-                ]);
             }
-        }
 
-        $payment->update($validated);
+            // Logic REJECTED
+            if ($validated['payment_status'] === 'REJECTED' && $payment->payment_status !== 'REJECTED') {
+                $validated['verified_at'] = null;
+
+                // cancelWithReason mengembalikan stok sekali saja, sehingga order yang
+                // sudah dibatalkan sebelumnya tidak menambah stok dua kali.
+                $payment->order?->cancelWithReason($validated['admin_notes'] ?? 'Pembayaran ditolak');
+            }
+
+            $payment->update($validated);
+        });
+
+        // File lama baru dihapus setelah transaksi sukses.
+        if (isset($validated['receipt_image_path']) && $oldReceiptPath) {
+            Storage::disk('local')->delete($oldReceiptPath);
+        }
 
         return redirect()->route('admin.payments')
             ->with('success', 'Pembayaran berhasil diperbarui.');
@@ -210,46 +208,21 @@ class PaymentController extends Controller
             return back()->with('error', 'Order sudah dibatalkan, pembayaran tidak bisa diverifikasi.');
         }
 
-        if ($validated['status'] === 'VERIFIED') {
-            $payment->update([
-                'payment_status' => 'VERIFIED',
-                'verified_at' => now(),
-            ]);
+        // Klik ganda / dua admin bersamaan: guard di atas bisa lolos bersamaan,
+        // sehingga RuntimeException dari model ditangkap dan ditampilkan sebagai pesan.
+        try {
+            if ($validated['status'] === 'VERIFIED') {
+                $payment->markVerified();
 
-            if ($payment->order) {
-                // ✅ OTOMATIS UBAH STATUS ORDER MENJADI SELESAI SAAT ADMIN VERIFIKASI
-                $payment->order->update(['status' => 'SELESAI']);
+                return back()->with('success', '✅ Pembayaran diverifikasi & Order ditandai SELESAI.');
             }
 
-            return back()->with('success', '✅ Pembayaran diverifikasi & Order ditandai SELESAI.');
+            $payment->markRejected($validated['rejection_note'] ?? 'Pembayaran ditolak');
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
         }
 
-        if ($validated['status'] === 'REJECTED') {
-            $payment->update([
-                'payment_status' => 'REJECTED',
-                'admin_notes' => $validated['rejection_note'] ?? 'Pembayaran ditolak',
-                'verified_at' => null,
-            ]);
-
-            if ($payment->order) {
-                // Kembalikan stok produk
-                foreach ($payment->order->orderItems as $item) {
-                    $product = Product::find($item->product_id);
-                    if ($product) {
-                        $product->increment('stock', $item->quantity);
-                    }
-                }
-
-                $payment->order->update([
-                    'status' => 'DIBATALKAN',
-                    'rejection_reason' => $validated['rejection_note'] ?? 'Pembayaran ditolak',
-                ]);
-            }
-
-            return back()->with('success', '❌ Pembayaran ditolak dan stok telah dikembalikan.');
-        }
-
-        return back()->with('error', 'Status tidak valid.');
+        return back()->with('success', '❌ Pembayaran ditolak dan stok telah dikembalikan.');
     }
 
     // ==========================================

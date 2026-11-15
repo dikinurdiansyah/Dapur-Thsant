@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +25,7 @@ class CheckoutController extends Controller
             'shipping_address' => 'required_if:fulfillment_method,DELIVERY|string',
             'pickup_note' => 'required_if:fulfillment_method,PICKUP|string|max:255',
             'payment_method' => 'required|in:TRANSFER_BANK,COD',
-            'payment_provider' => 'nullable|string|in:BCA,MANDIRI,GOPAY,OVO,SHOPEEPAY,QRIS',
+            'payment_provider' => 'required_if:payment_method,TRANSFER_BANK|string|in:BCA,MANDIRI,GOPAY,OVO,SHOPEEPAY,QRIS',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -95,6 +96,13 @@ class CheckoutController extends Controller
                 'message' => 'Pesanan berhasil dibuat',
                 'data' => $order->load('orderItems'),
             ], 201);
+        } catch (ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk pada pesanan tidak ditemukan.',
+            ], 404);
         } catch (\Exception $e) {
             DB::rollBack();
 

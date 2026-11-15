@@ -48,7 +48,9 @@ Route::post('/checkout', [OrderController::class, 'store'])->name('orders.store'
 // ✅ Memakai kode referensi acak (bukan ID berurutan) agar pesanan tidak bisa dienumerasi
 Route::get('/orders/{order:order_ref}/success', function (Order $order) {
     $order->load(['promo', 'orderItems.product', 'payment']);
-    session(['last_order_id' => $order->id]);
+
+    // Sengaja tidak menyimpan order ini ke sesi: pengunjung yang hanya tahu kode
+    // referensi tidak boleh bisa mengunggah bukti bayar untuk pesanan orang lain.
     return view('orders.success', compact('order'));
 })->name('orders.success')->middleware('throttle:30,1');
 

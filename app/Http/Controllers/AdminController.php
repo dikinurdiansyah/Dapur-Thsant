@@ -55,14 +55,14 @@ class AdminController extends Controller
 
     public function storeCategory(Request $request)
     {
+        // Slug dibuat lebih dulu agar bentrok nama (slug duplikat) tertangkap validasi,
+        // bukan menjadi QueryException 500.
+        $request->merge(['slug' => Str::slug((string) ($request->input('slug') ?: $request->input('name')))]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:categories,slug',
+            'slug' => 'required|string|max:255|unique:categories,slug',
         ]);
-
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
 
         Category::create($validated);
 
@@ -72,14 +72,12 @@ class AdminController extends Controller
 
     public function updateCategory(Request $request, Category $category)
     {
+        $request->merge(['slug' => Str::slug((string) ($request->input('slug') ?: $request->input('name')))]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:categories,slug,' . $category->id,
+            'slug' => 'required|string|max:255|unique:categories,slug,' . $category->id,
         ]);
-
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
 
         $category->update($validated);
 
@@ -115,20 +113,18 @@ class AdminController extends Controller
 
     public function storeProduct(Request $request)
     {
+        $request->merge(['slug' => Str::slug((string) ($request->input('slug') ?: $request->input('name')))]);
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug',
+            'slug' => 'required|string|max:255|unique:products,slug',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048|dimensions:max_width=4000,max_height=4000',
             'is_active' => 'nullable|boolean',
         ]);
-
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
@@ -145,20 +141,18 @@ class AdminController extends Controller
 
     public function updateProduct(Request $request, Product $product)
     {
+        $request->merge(['slug' => Str::slug((string) ($request->input('slug') ?: $request->input('name')))]);
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
+            'slug' => 'required|string|max:255|unique:products,slug,' . $product->id,
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048|dimensions:max_width=4000,max_height=4000',
             'is_active' => 'nullable|boolean',
         ]);
-
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
 
         if ($request->hasFile('image')) {
             if ($product->image_url) {
