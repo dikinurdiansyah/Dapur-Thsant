@@ -12,7 +12,8 @@ return new class extends Migration {
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password_hash');
-            $table->enum('role', ['ADMIN', 'OWNER'])->default('ADMIN');
+            // Role wajib diisi eksplisit agar tidak ada akun admin yang tercipta tanpa sengaja.
+            $table->enum('role', ['ADMIN', 'OWNER']);
             $table->string('phone_number')->nullable();
             $table->timestamps();
         });

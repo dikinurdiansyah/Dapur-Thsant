@@ -21,17 +21,18 @@ class HealthController extends Controller
                 'status' => 'ok',
                 'system_name' => 'Katalog UMKM Saturn Core System',
                 'sprint_stage' => 'Sprint 1 - Foundation Ready',
-                'database_status' => 'CONNECTED (MySQL 8.0 InnoDB)',
-                'database_name' => DB::connection()->getDatabaseName(),
+                'database_status' => 'CONNECTED',
                 'active_products_seeded' => $productCount,
                 'latency_ms' => $latency,
                 'timestamp' => now()->toIso8601String(),
             ], 200);
 
         } catch (Throwable $e) {
+            report($e);
+
             return response()->json([
                 'status' => 'error',
-                'database_status' => 'DISCONNECTED: ' . $e->getMessage(),
+                'database_status' => 'DISCONNECTED',
                 'timestamp' => now()->toIso8601String(),
             ], 500);
         }
