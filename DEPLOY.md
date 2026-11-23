@@ -4,10 +4,11 @@ Panduan ini mencakup deployment Docker melalui Coolify dan deployment manual ke 
 
 ## Deployment dengan Docker melalui Coolify
 
-File `Dockerfile` di root proyek membangun Laravel 12 dengan PHP 8.2 + Apache dan meng-compile aset Vite. Image bisa dijalankan sendiri untuk demo lokal menggunakan SQLite sementara; untuk Coolify, gunakan database MySQL/MariaDB dan volume storage. Coolify harus memakai repository/branch yang berisi Dockerfile ini, build strategy **Dockerfile**, dan port aplikasi **80**.
+File `Dockerfile` di root proyek membangun Laravel 12 dengan PHP 8.2 + Apache dan meng-compile aset Vite. `docker-compose.yml` menjalankan aplikasi dan menyimpan storage persisten; database MySQL/MariaDB dibuat sebagai resource terpisah di Coolify.
 
 1. Buat dan jalankan database MySQL/MariaDB di Coolify.
-2. Tambahkan repository GitHub proyek sebagai aplikasi, lalu isi Environment Variables aplikasi:
+2. Tambahkan repository GitHub proyek sebagai aplikasi, lalu pilih build strategy **Compose**, base directory `/`, dan Compose file `/docker-compose.yml`. Pastikan Coolify menunjuk ke branch yang berisi kedua file deployment.
+3. Isi Environment Variables aplikasi di Coolify:
 
    ```env
    APP_NAME="Dapur TH Sant"
@@ -29,8 +30,8 @@ File `Dockerfile` di root proyek membangun Laravel 12 dengan PHP 8.2 + Apache da
    ```
 
    Jangan gunakan `127.0.0.1` untuk `DB_HOST`; gunakan hostname internal database yang ditampilkan Coolify. Buat `APP_KEY` baru dan jangan menaruh secret di Git.
-3. Atur domain pada Coolify, pastikan port container yang diekspos `80`, lalu deploy.
-4. Setelah database dan aplikasi aktif, jalankan di terminal aplikasi Coolify:
+4. Atur domain pada Coolify, pastikan service `app` menggunakan port container `80`, lalu deploy.
+5. Setelah database dan aplikasi aktif, jalankan di terminal aplikasi Coolify:
 
    ```bash
    php artisan migrate --force
@@ -38,7 +39,7 @@ File `Dockerfile` di root proyek membangun Laravel 12 dengan PHP 8.2 + Apache da
    php artisan admin:create --name="Admin Dapur" --email=admin@domain.com --password='PasswordKuat' --role=OWNER
    ```
 
-5. Tambahkan persistent storage pada `/var/www/html/storage`. Direktori tersebut menyimpan upload privat, gambar, session, cache, dan log. Tanpa volume persisten, file yang diunggah dapat hilang saat redeploy.
+Volume `laravel_storage` di Compose mempertahankan storage aplikasi saat redeploy. Jangan menghapus volume itu saat membersihkan resource.
 
 Jangan jalankan seeder demo pada production. Pastikan `APP_DEBUG=false`, database terhubung, dan HTTPS aktif sebelum digunakan.
 
