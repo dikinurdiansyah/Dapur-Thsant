@@ -1,6 +1,50 @@
 # Panduan Deployment — Katalog Order UMKM (Dapur TH Sant)
 
-Panduan ini dipakai untuk men-deploy aplikasi ke server produksi atau staging (VPS Linux, PHP-FPM + Nginx + MySQL).
+Panduan ini mencakup deployment Docker melalui Coolify dan deployment manual ke VPS Linux (PHP-FPM + Nginx + MySQL).
+
+## Deployment dengan Docker melalui Coolify
+
+File `Dockerfile` di root proyek membangun Laravel 12 dengan PHP 8.2 + Apache dan meng-compile aset Vite. Image bisa dijalankan sendiri untuk demo lokal menggunakan SQLite sementara; untuk Coolify, gunakan database MySQL/MariaDB dan volume storage. Coolify harus memakai repository/branch yang berisi Dockerfile ini, build strategy **Dockerfile**, dan port aplikasi **80**.
+
+1. Buat dan jalankan database MySQL/MariaDB di Coolify.
+2. Tambahkan repository GitHub proyek sebagai aplikasi, lalu isi Environment Variables aplikasi:
+
+   ```env
+   APP_NAME="Dapur TH Sant"
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_KEY=base64:<buat-key-baru-khusus-production>
+   APP_URL=https://domain-dari-sekolah
+   DB_CONNECTION=mysql
+   DB_HOST=<hostname-internal-database-coolify>
+   DB_PORT=3306
+   DB_DATABASE=<nama-database>
+   DB_USERNAME=<user-database>
+   DB_PASSWORD=<password-database>
+   SESSION_DRIVER=file
+   SESSION_SECURE_COOKIE=true
+   CACHE_STORE=database
+   QUEUE_CONNECTION=database
+   FILESYSTEM_DISK=local
+   ```
+
+   Jangan gunakan `127.0.0.1` untuk `DB_HOST`; gunakan hostname internal database yang ditampilkan Coolify. Buat `APP_KEY` baru dan jangan menaruh secret di Git.
+3. Atur domain pada Coolify, pastikan port container yang diekspos `80`, lalu deploy.
+4. Setelah database dan aplikasi aktif, jalankan di terminal aplikasi Coolify:
+
+   ```bash
+   php artisan migrate --force
+   php artisan storage:link
+   php artisan admin:create --name="Admin Dapur" --email=admin@domain.com --password='PasswordKuat' --role=OWNER
+   ```
+
+5. Tambahkan persistent storage pada `/var/www/html/storage`. Direktori tersebut menyimpan upload privat, gambar, session, cache, dan log. Tanpa volume persisten, file yang diunggah dapat hilang saat redeploy.
+
+Jangan jalankan seeder demo pada production. Pastikan `APP_DEBUG=false`, database terhubung, dan HTTPS aktif sebelum digunakan.
+
+## Deployment manual ke VPS (PHP-FPM + Nginx)
+
+Bagian berikut berlaku untuk instalasi tanpa Docker.
 
 ---
 
