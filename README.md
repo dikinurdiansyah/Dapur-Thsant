@@ -381,5 +381,3 @@ Empat hal yang paling sering membuat error di server: **`public/build` belum di-
 ## Lisensi
 
 Proyek ini dibuat untuk keperluan tugas UKK RPL dan pengembangan UMKM. Kode aplikasi milik pemilik proyek; Laravel sendiri berlisensi MIT.
-#   D a p u r - T h s a n t  
- 
